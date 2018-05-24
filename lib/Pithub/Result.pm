@@ -1,21 +1,11 @@
 package Pithub::Result;
-our $VERSION = '0.01035';
+
 # ABSTRACT: Github v3 result object
 
 use Moo;
 use Array::Iterator;
-use JSON::MaybeXS;
+use JSON;
 use URI;
-use Carp;
-
-sub _isa_isa_maker {
-    my $class = shift;
-    return sub {
-        confess "must be an instance of $class but isn't a reference" if !ref $_[0];
-        confess "must be an instance of $class, but is a ".ref $_[0]
-          unless eval { $_[0]->isa($class) };
-    };
-}
 
 =head1 DESCRIPTION
 
@@ -76,11 +66,6 @@ has 'content' => (
     is      => 'ro',
     lazy    => 1,
 );
-
-=method raw_content
-
-Returns the content of the API response as a string, it will probably
-be JSON.
 
 =attr first_page_uri
 
@@ -152,30 +137,14 @@ has 'response' => (
         success     => 'is_success',
     },
     is       => 'ro',
-    isa      => _isa_isa_maker('HTTP::Response'),
+    isa      => sub { die 'must be a HTTP::Response, but is ' . ref $_[0] unless ref $_[0] eq 'HTTP::Response' },
     required => 1,
 );
-
-=method request
-
-Returns the L<HTTP::Request> object used to make the API call.
-
-=method code
-
-Returns the HTTP code from the API call.
-
-=method success
-
-Returns whether the API call was successful.
-
-=cut
 
 # required for next_page etc
 has '_request' => (
     is       => 'ro',
-    isa      => sub {
-        croak 'must be a coderef, but is ' . ref $_[0] unless ref $_[0] eq 'CODE'
-    },
+    isa      => sub { die 'must be a coderef, but is ' . ref $_[0] unless ref $_[0] eq 'CODE' },
     required => 1,
 );
 
@@ -184,28 +153,14 @@ has '_iterator' => (
     builder => '_build__iterator',
     clearer => '_clear_iterator',
     is      => 'ro',
-    isa     => _isa_isa_maker('Array::Iterator'),
+    isa     => sub { die 'must be a Array::Iterator, but is ' . ref $_[0] unless ref $_[0] eq 'Array::Iterator' },
     lazy    => 1,
-);
-
-=attr utf8
-
-This can set utf8 flag.
-
-=cut
-
-has 'utf8' => (
-    is      => 'ro',
-    default => 1,
 );
 
 has '_json' => (
     builder => '_build__json',
     is      => 'ro',
-    isa     => sub {
-        confess "$_[0] is not a suitable JSON object"
-          unless eval { $_[0]->can("decode") };
-    },
+    isa     => sub { die 'must be a JSON, but is ' . ref $_[0] unless ref $_[0] eq 'JSON' },
     lazy    => 1,
 );
 
@@ -417,17 +372,6 @@ sub prev_page {
     return $self->_paginate( $self->prev_page_uri );
 }
 
-=method etag
-
-Returns the value of the C<< ETag >> http header.
-
-=cut
-
-sub etag {
-    my ($self) = @_;
-    return $self->response->header('ETag');
-}
-
 =method ratelimit
 
 Returns the value of the C<< X-Ratelimit-Limit >> http header.
@@ -483,7 +427,7 @@ sub _build_prev_page_uri {
 
 sub _build__json {
     my ($self) = @_;
-    return JSON->new->utf8($self->utf8);
+    return JSON->new;
 }
 
 sub _get_link_header {

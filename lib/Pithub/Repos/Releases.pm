@@ -1,5 +1,5 @@
 package Pithub::Repos::Releases;
-our $VERSION = '0.01035';
+
 # ABSTRACT: Github v3 Repo Releases API
 
 use Moo;
@@ -14,7 +14,7 @@ Provides access to L<Pithub::Repos::Releases::Assets>.
 =cut
 
 sub assets {
-    return shift->_create_instance('Pithub::Repos::Releases::Assets', @_);
+    return shift->_create_instance('Pithub::Repos::Releases::Assets');
 }
 
 =method list

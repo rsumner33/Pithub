@@ -1,6 +1,6 @@
 use FindBin;
 use lib "$FindBin::Bin/lib";
-use Pithub::Test::Factory;
+use Pithub::Test;
 use Test::Most;
 
 BEGIN {
@@ -9,7 +9,7 @@ BEGIN {
 
 # Pithub::Search->email
 {
-    my $obj = Pithub::Test::Factory->create('Pithub::Search');
+    my $obj = Pithub::Test->create('Pithub::Search');
 
     isa_ok $obj, 'Pithub::Search';
 
@@ -24,7 +24,7 @@ BEGIN {
 
 # Pithub::Search->issues
 {
-    my $obj = Pithub::Test::Factory->create( 'Pithub::Search', user => 'foo', repo => 'bar' );
+    my $obj = Pithub::Test->create( 'Pithub::Search', user => 'foo', repo => 'bar' );
 
     isa_ok $obj, 'Pithub::Search';
 
@@ -43,7 +43,7 @@ BEGIN {
 
 # Pithub::Search->repos
 {
-    my $obj = Pithub::Test::Factory->create('Pithub::Search');
+    my $obj = Pithub::Test->create('Pithub::Search');
 
     isa_ok $obj, 'Pithub::Search';
 
@@ -53,13 +53,13 @@ BEGIN {
         my $result = $obj->repos( keyword => 'bla', params => { language => 'Perl', start_page => '100' } );
         is $result->request->method, 'GET', 'HTTP method';
         is $result->request->uri->path, '/legacy/repos/search/bla', 'HTTP path';
-        eq_or_diff { $result->request->uri->query_form }, { language => 'Perl', start_page => '100', per_page => 100 }, 'Query params';
+        eq_or_diff { $result->request->uri->query_form }, { language => 'Perl', start_page => '100' }, 'Query params';
     }
 }
 
 # Pithub::Search->users
 {
-    my $obj = Pithub::Test::Factory->create('Pithub::Search');
+    my $obj = Pithub::Test->create('Pithub::Search');
 
     isa_ok $obj, 'Pithub::Search';
 

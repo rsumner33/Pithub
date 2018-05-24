@@ -1,8 +1,7 @@
 use FindBin;
 use lib "$FindBin::Bin/../lib";
-use Pithub::Test::Factory;
+use Pithub::Test;
 use Test::Most;
-use JSON::MaybeXS;
 
 BEGIN {
     use_ok('Pithub');
@@ -50,10 +49,10 @@ c3QgcmVsZWFzZQo=
                 'name'  => 'Johannes Plunien'
             },
             'message' => "Add Changes file.",
-            'html_url' => 'https://github.com/plu/Pithub/commit/20f946f933a911253e480eb0e9feced1e36dbd45',
+            'html_url' => 'https://github.com/plu/Pithub/commits/20f946f933a911253e480eb0e9feced1e36dbd45',
             'parents' => [
                 {
-                    'html_url' => 'https://github.com/plu/Pithub/commit/9616d4f1515bf4de1a32f85a8fa1b1cc441da164',
+                    'html_url' => 'https://github.com/plu/Pithub/commits/9616d4f1515bf4de1a32f85a8fa1b1cc441da164',
                     'sha' => '9616d4f1515bf4de1a32f85a8fa1b1cc441da164',
                     'url' => 'https://api.github.com/repos/plu/Pithub/git/commits/9616d4f1515bf4de1a32f85a8fa1b1cc441da164'
                 }
@@ -146,8 +145,7 @@ c3QgcmVsZWFzZQo=
                     'url'  => 'https://api.github.com/repos/plu/Pithub/git/trees/7d2b61bafb9a703b393af386e4bcc350ad2c9aa9'
                 }
             ],
-            'url' => 'https://api.github.com/repos/plu/Pithub/git/trees/7331484696162bf7b5c97de488fd2c1289fd175c',
-            truncated => JSON->false,
+            'url' => 'https://api.github.com/repos/plu/Pithub/git/trees/7331484696162bf7b5c97de488fd2c1289fd175c'
           },
           'Pithub::GitData::Trees->get content';
 
@@ -189,7 +187,6 @@ c3QgcmVsZWFzZQo=
                     'url'  => 'https://api.github.com/repos/plu/Pithub/git/blobs/b493b43e8016b86550c065fcf83df537052ad371'
                 }
             ],
-            truncated => JSON->false,
             'url' => 'https://api.github.com/repos/plu/Pithub/git/trees/7331484696162bf7b5c97de488fd2c1289fd175c'
           },
           'Pithub::GitData::Trees->get content recursive';
@@ -201,10 +198,10 @@ c3QgcmVsZWFzZQo=
 SKIP: {
     skip 'PITHUB_TEST_TOKEN required to run this test - DO NOT DO THIS UNLESS YOU KNOW WHAT YOU ARE DOING', 1 unless $ENV{PITHUB_TEST_TOKEN};
 
-    my $org      = Pithub::Test::Factory->test_account->{org};
-    my $org_repo = Pithub::Test::Factory->test_account->{org_repo};
-    my $repo     = Pithub::Test::Factory->test_account->{repo};
-    my $user     = Pithub::Test::Factory->test_account->{user};
+    my $org      = Pithub::Test->test_account->{org};
+    my $org_repo = Pithub::Test->test_account->{org_repo};
+    my $repo     = Pithub::Test->test_account->{repo};
+    my $user     = Pithub::Test->test_account->{user};
     my $p        = Pithub->new(
         user  => $user,
         repo  => $repo,

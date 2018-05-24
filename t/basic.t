@@ -1,9 +1,9 @@
 use FindBin;
 use lib "$FindBin::Bin/lib";
-use JSON::MaybeXS;
-use Pithub::Test::Factory;
-use Pithub::Test::UA;
+use JSON;
 use Pithub::Test;
+use Pithub::Test::UA;
+use Test::Most;
 
 BEGIN {
     use_ok('Pithub');
@@ -93,11 +93,6 @@ my @tree = (
         ],
     },
     {
-        accessor => 'markdown',
-        isa      => 'Pithub::Markdown',
-        methods  => [qw(render)],
-    },
-    {
         accessor => 'orgs',
         isa      => 'Pithub::Orgs',
         methods  => [qw(get list update)],
@@ -110,7 +105,7 @@ my @tree = (
             {
                 accessor => 'teams',
                 isa      => 'Pithub::Orgs::Teams',
-                methods  => [qw(add_member add_membership add_repo create delete get has_repo is_member list list_members list_repos remove_member remove_membership remove_repo update)],
+                methods  => [qw(add_member add_repo create delete get has_repo is_member list list_members list_repos remove_member remove_repo update)],
             },
         ],
     },
@@ -162,24 +157,9 @@ my @tree = (
                 methods  => [qw(create delete get list update test)],
             },
             {
-                accessor => 'issues',
-                isa      => 'Pithub::Issues',
-                methods  => [qw(create get list update)],
-            },
-            {
                 accessor => 'keys',
                 isa      => 'Pithub::Repos::Keys',
-                methods  => [qw(create delete get list)],
-            },
-            {
-                accessor => 'markdown',
-                isa      => 'Pithub::Markdown',
-                methods  => [qw(render)],
-            },
-            {
-                accessor => 'pull_requests',
-                isa      => 'Pithub::PullRequests',
-                methods  => [qw(commits create files get is_merged list merge update)],
+                methods  => [qw(create delete get list update)],
             },
             {
                 accessor => 'releases',
@@ -233,7 +213,7 @@ my @tree = (
             {
                 accessor => 'keys',
                 isa      => 'Pithub::Users::Keys',
-                methods  => [qw(create delete get list)],
+                methods  => [qw(create delete get list update)],
             },
         ],
     },
@@ -241,18 +221,6 @@ my @tree = (
         accessor => 'search',
         isa      => 'Pithub::Search',
         methods  => [qw(email issues repos users)],
-    },
-    {
-        accessor => 'search',
-        args     => [search_api => 'legacy'],
-        isa      => 'Pithub::Search',
-        methods  => [qw(email issues repos users)],
-    },
-    {
-        accessor => 'search',
-        args     => [search_api => 'v3'],
-        isa      => 'Pithub::SearchV3',
-        methods  => [qw(issues repos users)],
     },
 );
 
@@ -268,7 +236,7 @@ sub validate_tree {
         $tests->( $node, $obj );
         validate_tree(
             tree  => $node->{subtree},
-            obj   => $obj->$accessor(@{ $node->{args} || [] }),
+            obj   => $obj->$accessor,
             tests => $tests,
         ) if $node->{subtree};
     }
@@ -298,10 +266,8 @@ sub validate_tree {
             my $methods  = $node->{methods};
 
             can_ok $obj, $accessor;
-            my $val = $obj->$accessor(@{ $node->{args} || [] });
-            isa_ok $val, $node->{isa};
-            can_ok $val, @$methods if @{ $methods || [] };
-            can_ok $val, 'rate_limit';
+            isa_ok $obj->$accessor, $node->{isa};
+            can_ok $obj->$accessor, @$methods if @{ $methods || [] };
 
             foreach my $attr ( keys %attributes ) {
                 is $obj->$attr, $attributes{$attr}, "Attribute ${attr} was curried to ${obj}";
@@ -321,7 +287,7 @@ sub validate_tree {
                   or ( $node->{isa} eq 'Pithub::Issues::Labels' and grep $_ eq $method, qw(add replace) );
 
                 lives_ok {
-                    $result = $val->$method(
+                    $result = $obj->$accessor->$method(
                         archive_format => 'tarball',
                         asset_id       => 1,
                         assignee       => 'john',
@@ -337,7 +303,6 @@ sub validate_tree {
                         issue_id       => 1,
                         key_id         => 1,
                         keyword        => 'foo',
-                        q              => 'foo',
                         label          => 1,
                         milestone_id   => 1,
                         name           => 'foo',
@@ -377,7 +342,7 @@ sub validate_tree {
 }
 
 {
-    my $p = Pithub::Test::Factory->create('Pithub');
+    my $p = Pithub::Test->create('Pithub');
 
     isa_ok $p, 'Pithub';
 
@@ -414,7 +379,7 @@ sub validate_tree {
 
 {
     my $json = JSON->new;
-    my $p    = Pithub::Test::Factory->create('Pithub');
+    my $p    = Pithub::Test->create('Pithub');
     $p->token('123');
     my $request = $p->request( method => 'POST', path => '/foo', data => { some => 'data' } )->request;
     eq_or_diff $json->decode( $request->content ), { some => 'data' }, 'The JSON content was set in the request object';
@@ -426,8 +391,7 @@ sub validate_tree {
 }
 
 {
-    my $p = Pithub::Test::Factory->create('Pithub');
-    $p->ua->add_response('error/notfound.GET');
+    my $p = Pithub::Test->create('Pithub');
     my $result = $p->request( method => 'GET', path => '/error/notfound' );
 
     is $result->code,    404, 'HTTP status is 404';
@@ -445,8 +409,7 @@ sub validate_tree {
 }
 
 {
-    my $p = Pithub::Test::Factory->create('Pithub');
-    $p->ua->add_response('users/miyagawa/followers.GET');
+    my $p = Pithub::Test->create('Pithub');
     my $result = $p->users->followers->list( user => 'miyagawa' );
 
     is $result->count,          30,                                                        'Count accessor';
@@ -457,17 +420,15 @@ sub validate_tree {
 
     is $result->first_page, undef, 'We are on first page already';
     is $result->prev_page,  undef, 'No prev page on the first page';
-    uri_is $result->next_page->request->uri, 'https://api.github.com/users/miyagawa/followers?page=2&per_page=100',  'Next page call';
-    uri_is $result->last_page->request->uri, 'https://api.github.com/users/miyagawa/followers?page=26&per_page=100', 'Last page call';
+    is $result->next_page->request->uri, 'https://api.github.com/users/miyagawa/followers?page=2',  'Next page call';
+    is $result->last_page->request->uri, 'https://api.github.com/users/miyagawa/followers?page=26', 'Last page call';
 
-    uri_is $result->get_page(42)->request->uri, 'https://api.github.com/users/miyagawa/followers?page=42&per_page=100',
+    is $result->get_page(42)->request->uri, 'https://api.github.com/users/miyagawa/followers?page=42',
       'URI for get_page is generated, no matter if it exists or not';
 }
 
 {
-    my $p = Pithub::Test::Factory->create('Pithub');
-    $p->ua->add_response('users/miyagawa/followers.GET');
-    $p->ua->add_response('users/miyagawa/followers.GET.page-3');
+    my $p = Pithub::Test->create('Pithub');
     my $result = $p->users->followers->list( user => 'miyagawa' )->get_page(3);
 
     is $result->first_page_uri, 'https://api.github.com/users/miyagawa/followers?page=1',  'First page link on third page';
@@ -475,30 +436,27 @@ sub validate_tree {
     is $result->next_page_uri,  'https://api.github.com/users/miyagawa/followers?page=4',  'Next page link no third page';
     is $result->last_page_uri,  'https://api.github.com/users/miyagawa/followers?page=26', 'Last page link no third page';
 
-    uri_is $result->first_page->request->uri, 'https://api.github.com/users/miyagawa/followers?page=1&per_page=100',  'First page call';
-    uri_is $result->prev_page->request->uri,  'https://api.github.com/users/miyagawa/followers?page=2&per_page=100',  'Prev page call';
-    uri_is $result->next_page->request->uri,  'https://api.github.com/users/miyagawa/followers?page=4&per_page=100',  'Next page call';
-    uri_is $result->last_page->request->uri,  'https://api.github.com/users/miyagawa/followers?page=26&per_page=100', 'Last page call';
+    is $result->first_page->request->uri, 'https://api.github.com/users/miyagawa/followers?page=1',  'First page call';
+    is $result->prev_page->request->uri,  'https://api.github.com/users/miyagawa/followers?page=2',  'Prev page call';
+    is $result->next_page->request->uri,  'https://api.github.com/users/miyagawa/followers?page=4',  'Next page call';
+    is $result->last_page->request->uri,  'https://api.github.com/users/miyagawa/followers?page=26', 'Last page call';
 }
 
 {
-    my $p = Pithub::Test::Factory->create('Pithub');
-    $p->ua->add_response('users/miyagawa/followers.GET');
-    $p->ua->add_response('users/miyagawa/followers.GET.page-26');
+    my $p = Pithub::Test->create('Pithub');
     my $result = $p->users->followers->list( user => 'miyagawa' )->get_page(26);
 
-    uri_is $result->first_page->request->uri, 'https://api.github.com/users/miyagawa/followers?page=1&per_page=100',  'First page call';
-    uri_is $result->prev_page->request->uri,  'https://api.github.com/users/miyagawa/followers?page=25&per_page=100', 'Prev page call';
+    is $result->first_page->request->uri, 'https://api.github.com/users/miyagawa/followers?page=1',  'First page call';
+    is $result->prev_page->request->uri,  'https://api.github.com/users/miyagawa/followers?page=25', 'Prev page call';
     is $result->next_page, undef, 'No next page on the last page';
     is $result->last_page, undef, 'We are on last page already';
 
-    uri_is $result->get_page(42)->request->uri, 'https://api.github.com/users/miyagawa/followers?page=42&per_page=100',
+    is $result->get_page(42)->request->uri, 'https://api.github.com/users/miyagawa/followers?page=42',
       'URI for get_page is generated, no matter if it exists or not';
 }
 
 {
-    my $p = Pithub::Test::Factory->create( 'Pithub', per_page => 1 );
-    $p->ua->add_response('users/miyagawa/followers.GET.per_page-1');
+    my $p = Pithub::Test->create( 'Pithub', per_page => 1 );
     my $result = $p->users->followers->list( user => 'miyagawa' );
 
     eq_or_diff { $result->next_page->request->uri->query_form }, { page => 2,   per_page => 1 }, 'Next page call';
@@ -511,8 +469,7 @@ sub validate_tree {
 }
 
 {
-    my $p = Pithub::Test::Factory->create('Pithub');
-    $p->ua->add_response('users/plu.GET');
+    my $p = Pithub::Test->create('Pithub');
     my $result = $p->users->get( user => 'plu' );
 
     is $result->first_page, undef, 'First page call';
@@ -525,14 +482,13 @@ sub validate_tree {
 }
 
 {
-    my $p = Pithub::Test::Factory->create( 'Pithub', jsonp_callback => 'foo' );
+    my $p = Pithub::Test->create( 'Pithub', jsonp_callback => 'foo' );
     my $result = $p->request( method => 'GET', path => '/foo' );
-    eq_or_diff {$result->request->uri->query_form}, { callback => 'foo', per_page => 100 }, 'The callback parameter was set';
+    is $result->request->uri->query, 'callback=foo', 'The callback parameter was set';
 }
 
 {
-    my $p = Pithub::Test::Factory->create('Pithub');
-    $p->ua->add_response('orgs/CPAN-API/repos.GET');
+    my $p = Pithub::Test->create('Pithub');
     my $result = $p->request( method => 'GET', path => '/orgs/CPAN-API/repos' );
 
     my @expectations = (
@@ -551,8 +507,7 @@ sub validate_tree {
 }
 
 {
-    my $p = Pithub::Test::Factory->create('Pithub');
-    $p->ua->add_response('users/plu.GET');
+    my $p = Pithub::Test->create('Pithub');
     my $result = $p->request( method => 'GET', path => '/users/plu' );
 
     my $row = $result->next;
@@ -564,11 +519,7 @@ sub validate_tree {
 }
 
 {
-    my $p = Pithub::Test::Factory->create( 'Pithub', per_page => 15 );
-    $p->ua->add_response('users/plu/followers.GET.per_page-15');
-    $p->ua->add_response('users/plu/followers.GET.page-2.per_page-15');
-    $p->ua->add_response('users/plu/followers.GET.page-3.per_page-15');
-    $p->ua->add_response('users/plu/followers.GET.page-4.per_page-15');
+    my $p = Pithub::Test->create( 'Pithub', per_page => 15 );
     my $result = $p->users->followers->list( user => 'plu' );
     $result->auto_pagination(1);
     my @followers = ();
@@ -579,11 +530,7 @@ sub validate_tree {
 }
 
 {
-    my $p = Pithub::Test::Factory->create( 'Pithub', per_page => 15, auto_pagination => 1 );
-    $p->ua->add_response('users/plu/followers.GET.per_page-15');
-    $p->ua->add_response('users/plu/followers.GET.page-2.per_page-15');
-    $p->ua->add_response('users/plu/followers.GET.page-3.per_page-15');
-    $p->ua->add_response('users/plu/followers.GET.page-4.per_page-15');
+    my $p = Pithub::Test->create( 'Pithub', per_page => 15, auto_pagination => 1 );
     my $result = $p->users->followers->list( user => 'plu' );
     my @followers = ();
     while ( my $row = $result->next ) {
@@ -593,7 +540,7 @@ sub validate_tree {
 }
 
 {
-    my $p = Pithub::Test::Factory->create(
+    my $p = Pithub::Test->create(
         'Pithub',
         prepare_request => sub {
             my ($request) = @_;
@@ -605,7 +552,7 @@ sub validate_tree {
 }
 
 {
-    my $p      = Pithub::Test::Factory->create('Pithub');
+    my $p      = Pithub::Test->create('Pithub');
     my $result = $p->users->followers->list(
         user    => 'plu',
         options => {
@@ -619,7 +566,7 @@ sub validate_tree {
 }
 
 {
-    my $p = Pithub::Test::Factory->create('Pithub');
+    my $p = Pithub::Test->create('Pithub');
     throws_ok {
         $p->users->get( user => 'foo', params => 5 );
     }
@@ -627,17 +574,7 @@ sub validate_tree {
 
     my $result = $p->users->get( user => 'foo', params => { direction => 'asc' } );
     my %query = $result->request->uri->query_form;
-    eq_or_diff \%query, { direction => 'asc', per_page => 100 }, 'The params were set';
+    eq_or_diff \%query, { direction => 'asc' }, 'The params were set';
 }
-
-subtest "_create_instance passes attributes" => sub {
-    my $p = Pithub::Test::Factory->create("Pithub", per_page => 10);
-
-    is $p->repos->per_page, 10;
-    is $p->repos( per_page => 5 )->per_page, 5;
-    is $p->issues->comments( per_page => 3 )->per_page, 3;
-
-    is $p->repos( per_page => undef )->per_page, undef, "undef is allowed";
-};
 
 done_testing;

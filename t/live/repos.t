@@ -1,6 +1,6 @@
 use FindBin;
 use lib "$FindBin::Bin/../lib";
-use Pithub::Test::Factory;
+use Pithub::Test;
 use Test::Most;
 
 BEGIN {
@@ -19,8 +19,7 @@ SKIP: {
         my $result = $p->repos->branches( user => 'plu', repo => 'Pithub' );
         is $result->success, 1, 'Pithub::Repos->branches successful';
         ok $result->count > 0, 'Pithub::Repos->branches has some rows';
-        ok $result->content->[0]{name};
-        like $result->content->[0]{commit}{sha}, qr{^[a-f0-9]+$};
+        is $result->content->[0]{name}, 'master', 'Pithub::Repos->branches: Attribute name'
     }
 
     # Pithub::Repos->contributors
@@ -37,17 +36,6 @@ SKIP: {
         is $result->content->{name}, 'Pithub', 'Pithub::Repos->get: Attribute name';
         is $result->content->{owner}{login}, 'plu', 'Pithub::Repos->get: Attribute owner.login';
     }
-
-    subtest "Pithub::Repos->branch" => sub {
-        my $result = $p->repos->branch(
-            user        => 'plu',
-            repo        => 'Pithub',
-            branch      => 'master'
-        );
-        ok $result->success;
-        is $result->content->{name}, 'master';
-        like $result->content->{commit}{sha}, qr{^[a-f0-9]+$};
-    };
 
     # Pithub::Repos->languages
     {
@@ -155,10 +143,10 @@ SKIP: {
 SKIP: {
     skip 'PITHUB_TEST_TOKEN required to run this test - DO NOT DO THIS UNLESS YOU KNOW WHAT YOU ARE DOING', 1 unless $ENV{PITHUB_TEST_TOKEN};
 
-    my $org      = Pithub::Test::Factory->test_account->{org};
-    my $org_repo = Pithub::Test::Factory->test_account->{org_repo};
-    my $repo     = Pithub::Test::Factory->test_account->{repo};
-    my $user     = Pithub::Test::Factory->test_account->{user};
+    my $org      = Pithub::Test->test_account->{org};
+    my $org_repo = Pithub::Test->test_account->{org_repo};
+    my $repo     = Pithub::Test->test_account->{repo};
+    my $user     = Pithub::Test->test_account->{user};
     my $p        = Pithub->new(
         user  => $user,
         repo  => $repo,
@@ -206,11 +194,13 @@ SKIP: {
     }
 
     {
+        require File::Basename;
+
         # Pithub::Repos::Downloads->create
         my $result = $p->repos->downloads->create(
             data => {
-                name         => path(__FILE__)->basename,
-                size         => -s __FILE__,
+                name         => File::Basename::basename(__FILE__),
+                size         => ( stat(__FILE__) )[7],
                 description  => 'This test (t/live.t)',
                 content_type => 'text/plain',
             },
@@ -251,6 +241,15 @@ SKIP: {
 
         # Pithub::Repos::Keys->list
         is $p->repos->keys->list->first->{title}, 'someone@somewhere', 'Pithub::Repos::Keys->list title attribute';
+
+        # Pithub::Repos::Keys->update
+        ok $p->repos->keys->update(
+            key_id => $key_id,
+            data   => { title => 'someone@somewhereelse' }
+        )->success, 'Pithub::Repos::Keys->update successful';
+
+        # Pithub::Repos::Keys->get
+        is $p->repos->keys->get( key_id => $key_id )->content->{title}, 'someone@somewhereelse', 'Pithub::Repos::Keys->get title attribute after update';
 
         # Pithub::Repos::Keys->delete
         ok $p->repos->keys->delete( key_id => $key_id )->success, 'Pithub::Repos::Keys->delete successful';

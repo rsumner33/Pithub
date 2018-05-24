@@ -1,6 +1,6 @@
 use FindBin;
 use lib "$FindBin::Bin/../lib";
-use Pithub::Test::Factory;
+use Pithub::Test;
 use Test::Most;
 
 BEGIN {
@@ -49,10 +49,10 @@ SKIP: {
 SKIP: {
     skip 'PITHUB_TEST_TOKEN required to run this test - DO NOT DO THIS UNLESS YOU KNOW WHAT YOU ARE DOING', 1 unless $ENV{PITHUB_TEST_TOKEN};
 
-    my $org      = Pithub::Test::Factory->test_account->{org};
-    my $org_repo = Pithub::Test::Factory->test_account->{org_repo};
-    my $repo     = Pithub::Test::Factory->test_account->{repo};
-    my $user     = Pithub::Test::Factory->test_account->{user};
+    my $org      = Pithub::Test->test_account->{org};
+    my $org_repo = Pithub::Test->test_account->{org_repo};
+    my $repo     = Pithub::Test->test_account->{repo};
+    my $user     = Pithub::Test->test_account->{user};
     my $p        = Pithub->new(
         user  => $user,
         repo  => $repo,
@@ -119,10 +119,6 @@ SKIP: {
             user => $user,
         )->count, 1, 'Pithub::Orgs::Members->list one member';
 
-        foreach my $team (@{ $p->orgs->teams->list( org => $org )->content }) {
-            $p->orgs->teams->delete( team_id => $team->{id} );
-        }
-
         # Pithub::Orgs::Teams->create
         my $team_id = $p->orgs->teams->create(
             org  => $org,
@@ -132,7 +128,7 @@ SKIP: {
 
         # Pithub::Orgs::Teams->list
         my @teams = splice @{ $p->orgs->teams->list( org => $org )->content }, 0, 2;
-        eq_or_diff [ sort map { $_->{name} } @teams ], [sort qw(Core Owners)], 'Pithub::Orgs::Teams->list after create';
+        eq_or_diff [ map { $_->{name} } @teams ], [qw(Core Owners)], 'Pithub::Orgs::Teams->list after create';
 
         # Pithub::Orgs::Teams->update
         ok $p->orgs->teams->update(
@@ -185,8 +181,7 @@ SKIP: {
         # Pithub::Orgs::Teams->add_repo
         ok $p->orgs->teams->add_repo(
             team_id => $team_id,
-            org     => $org,
-            repo    => $org_repo,
+            repo    => "${org}/${org_repo}",
         )->success, 'Pithub::Orgs::Teams->add_repo successful';
 
         # Pithub::Orgs::Teams->has_repo

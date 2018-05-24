@@ -1,5 +1,5 @@
 package Pithub::Repos::Forks;
-our $VERSION = '0.01035';
+
 # ABSTRACT: Github v3 Repo Forks API
 
 use Moo;
@@ -42,7 +42,7 @@ sub create {
         return $self->request(
             method => 'POST',
             path   => sprintf( '/repos/%s/%s/forks', delete $args{user}, delete $args{repo} ),
-            data => { organization => $org },
+            data => { org => $org },
             %args,
         );
     }

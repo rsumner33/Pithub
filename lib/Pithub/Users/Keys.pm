@@ -1,5 +1,5 @@
 package Pithub::Users::Keys;
-our $VERSION = '0.01035';
+
 # ABSTRACT: Github v3 User Keys API
 
 use Moo;
@@ -122,6 +122,42 @@ sub list {
     return $self->request(
         method => 'GET',
         path   => '/user/keys',
+        %args,
+    );
+}
+
+=method update
+
+=over
+
+=item *
+
+Update a public key
+
+    PATCH /user/keys/:id
+
+Examples:
+
+    my $k = Pithub::Users::Keys->new( token => 'b3c62c6' );
+    my $result = $k->update(
+        key_id => 123,
+        data => {
+            title => 'plu@localhost',
+            key   => 'ssh-rsa AAA...',
+        }
+    );
+
+=back
+
+=cut
+
+sub update {
+    my ( $self, %args ) = @_;
+    croak 'Missing key in parameters: key_id' unless $args{key_id};
+    croak 'Missing key in parameters: data (hashref)' unless ref $args{data} eq 'HASH';
+    return $self->request(
+        method => 'PATCH',
+        path   => sprintf( '/user/keys/%s', delete $args{key_id} ),
         %args,
     );
 }

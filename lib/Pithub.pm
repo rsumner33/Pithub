@@ -1,5 +1,5 @@
 package Pithub;
-our $VERSION = '0.01035';
+
 # ABSTRACT: Github v3 API
 
 use Moo;
@@ -11,14 +11,12 @@ use Pithub::Orgs;
 use Pithub::PullRequests;
 use Pithub::Repos;
 use Pithub::Search;
-use Pithub::SearchV3;
 use Pithub::Users;
-use Carp 'croak';
 extends 'Pithub::Base';
 
 =head1 DESCRIPTION
 
-L<Pithub> (B<P>erl + GB<ithub>) provides a set of modules to access the
+L<Pithub> provides a set of modules to access the
 L<Github v3 API|http://developer.github.com/v3/> in an object
 oriented way. There is also L<Net::GitHub> which does the same for
 all the versions (v1, v2, v3) of the Github API.
@@ -30,7 +28,6 @@ L<Pithub> supports all API calls so far, but only for v3.
     use Data::Dumper;
 
     my $p = Pithub->new;
-    # my $p = Pithub->new(utf8 => 0); # enable compatibility options for version 0.01029 or lower
     my $result = $p->repos->get( user => 'plu', repo => 'Pithub' );
 
     # $result->content is either an arrayref or an hashref
@@ -44,21 +41,6 @@ L<Pithub> supports all API calls so far, but only for v3.
         printf "%s\n", $row->{name};
     }
 
-    # Connect to your local GitHub Enterprise instance
-    my $p = Pithub->new(
-        api_uri => 'https://github.yourdomain.com/api/v3/'
-    );
-
-    # No need to provide user/repo to each module:
-    my $pit = Pithub->new(
-      user  => 'plu',
-      repo  => 'pithub',
-      token => 'my_oauth_token',
-    );
-
-    $pit->repos->get;
-    $pit->repos->commits->list;
-
 =head1 DOCUMENTATION
 
 Quite a lot of the L<Pithub> documentation has been taken directly
@@ -66,9 +48,6 @@ from the great API documentation at
 L<Github|http://developer.github.com/v3/>. Please also read the
 documentation there, since it might be more complete and more
 up-to-date.
-
-L<Pithub::Base> contains documentation for attributes inherited by all
-Pithub modules.
 
 =head1 WARNING
 
@@ -129,8 +108,8 @@ L<Pithub::Events>
 
 See also: L<http://developer.github.com/v3/events/>
 
-    my $events = Pithub->new->events;
-    my $events = Pithub::Events->new;
+    my $gists = Pithub->new->events;
+    my $gists = Pithub::Events->new;
 
 =item *
 
@@ -543,39 +522,6 @@ See also: L<http://developer.github.com/v3/users/keys/>
 
 =cut
 
-sub _validate_search_api {
-    my %search_apis = map { $_ => 1 } qw(legacy v3);
-    croak "unknown search api '$_[0]'"
-        unless exists $search_apis{$_[0]};
-}
-
-=attr search_api
-
-    my $p = Pithub->new({ search_api => 'v3' });
-    my $search = $p->search; # $search->isa('Pithub::SearchV3');
-
-This attribute allows the default for the API to use for searches to be
-specified. The two accepted values are C<v3> and C<legacy>. For compatibility
-reasons the default is C<legacy>.
-
-=cut
-
-has search_api => (
-    is  => 'ro',
-    isa => \&_validate_search_api,
-    default => 'legacy',
-);
-
-sub _search_class {
-    my ($self, $search_api) = @_;
-
-    _validate_search_api($search_api);
-
-    return $search_api eq 'legacy'
-        ? 'Pithub::Search'
-        : 'Pithub::SearchV3';
-}
-
 =method events
 
 Provides access to L<Pithub::Events>.
@@ -583,7 +529,7 @@ Provides access to L<Pithub::Events>.
 =cut
 
 sub events {
-    return shift->_create_instance('Pithub::Events', @_);
+    return shift->_create_instance('Pithub::Events');
 }
 
 =method gists
@@ -593,7 +539,7 @@ Provides access to L<Pithub::Gists>.
 =cut
 
 sub gists {
-    return shift->_create_instance('Pithub::Gists', @_);
+    return shift->_create_instance('Pithub::Gists');
 }
 
 =method git_data
@@ -603,7 +549,7 @@ Provides access to L<Pithub::GitData>.
 =cut
 
 sub git_data {
-    return shift->_create_instance('Pithub::GitData', @_);
+    return shift->_create_instance('Pithub::GitData');
 }
 
 =method issues
@@ -613,17 +559,7 @@ Provides access to L<Pithub::Issues>.
 =cut
 
 sub issues {
-    return shift->_create_instance('Pithub::Issues', @_);
-}
-
-=method markdown
-
-Provides access to L<Pithub::Markdown>.
-
-=cut
-
-sub markdown {
-    return shift->_create_instance('Pithub::Markdown', @_);
+    return shift->_create_instance('Pithub::Issues');
 }
 
 =method orgs
@@ -633,7 +569,7 @@ Provides access to L<Pithub::Orgs>.
 =cut
 
 sub orgs {
-    return shift->_create_instance('Pithub::Orgs', @_);
+    return shift->_create_instance('Pithub::Orgs');
 }
 
 =method pull_requests
@@ -643,7 +579,7 @@ Provides access to L<Pithub::PullRequests>.
 =cut
 
 sub pull_requests {
-    return shift->_create_instance('Pithub::PullRequests', @_);
+    return shift->_create_instance('Pithub::PullRequests');
 }
 
 =method repos
@@ -653,29 +589,17 @@ Provides access to L<Pithub::Repos>.
 =cut
 
 sub repos {
-    return shift->_create_instance('Pithub::Repos', @_);
+    return shift->_create_instance('Pithub::Repos');
 }
 
 =method search
 
-  my $legacy_search  = $p->search(search_api => 'legacy');
-  my $v3_search      = $p->search(search_api => 'v3');
-  my $default_search = $p->search;
-
-Provides access to L<Pithub::Search> and L<Pithub::SearchV3>. When no
-C<search_api> option is given, the value provided by the C<search_api>
-attribute is used.
+Provides access to L<Pithub::Search>.
 
 =cut
 
 sub search {
-    my ($self, %args) = @_;
-    my $class = $self->_search_class(
-        exists $args{search_api}
-            ? delete $args{search_api}
-            : $self->search_api,
-    );
-    return shift->_create_instance($class, @_);
+    return shift->_create_instance('Pithub::Search');
 }
 
 =method users
@@ -685,7 +609,7 @@ Provides access to L<Pithub::Users>.
 =cut
 
 sub users {
-    return shift->_create_instance('Pithub::Users', @_);
+    return shift->_create_instance('Pithub::Users');
 }
 
 =head1 CONTRIBUTORS
@@ -699,10 +623,6 @@ Andreas Marienborg
 =item *
 
 Alessandro Ghedini
-
-=item *
-
-Michael G Schwern
 
 =back
 

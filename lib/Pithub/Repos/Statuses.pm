@@ -1,5 +1,5 @@
 package Pithub::Repos::Statuses;
-our $VERSION = '0.01035';
+
 # ABSTRACT:  Github v3 repos / statuses API
 
 use Moo;
@@ -76,7 +76,7 @@ Examples:
     my $result   = $statuses->create( user => 'plu', repo => 'Pithub',
         sha => '0123456', 
         data => {
-            state => 'error',
+            status => 'error',
             description => 'Build failed',
             target_url => 'https://travis-ci.org/some/url/0123456',
         },

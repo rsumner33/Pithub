@@ -1,17 +1,15 @@
 package Pithub::Base;
-our $VERSION = '0.01035';
+
 # ABSTRACT: Github v3 base class for all Pithub modules
 
 use Moo;
 use Carp qw(croak);
 use HTTP::Headers;
 use HTTP::Request;
-use JSON::MaybeXS;
+use JSON;
 use LWP::UserAgent;
 use Pithub::Result;
 use URI;
-
-with 'Pithub::Result::SharedCache';
 
 =head1 DESCRIPTION
 
@@ -20,8 +18,8 @@ L<Pithub::Base>, even L<Pithub> itself. So all
 L<attributes|/ATTRIBUTES> listed here can either be set in the
 constructor or via the setter on the objects.
 
-If any attribute is set on a L<Pithub> object it gets
-automatically set on objects that get created by a method call on
+If any attribute is set on a L<Pithub> object, it gets
+automatically set on objects, that get created by a method call on
 the L<Pithub> object. This is very convenient for attributes like
 the L</token> or the L</user> and L</repo> attributes.
 
@@ -32,13 +30,6 @@ same repo. This also works for other objects: If you create an
 object of L<Pithub::Repos> where you set the L</user> and L</repo>
 attribute in the constructor, this will also be set once you
 get to the L<Pithub::Repos::Keys> object via the C<< keys >> method.
-
-Attributes passed along from the parent can be changed in the method
-call.
-
-    my $p = Pithub->new( per_page => 50 );
-    my $r1 = $p->repos;                         # $r->per_page == 50
-    my $r2 = $p->repos( per_page => 100 );      # $r->per_page == 100
 
 Examples:
 
@@ -68,8 +59,6 @@ Examples:
 
 =attr auto_pagination
 
-Off by default.
-
 See also: L<Pithub::Result/auto_pagination>.
 
 =cut
@@ -81,8 +70,7 @@ has 'auto_pagination' => (
 
 =attr api_uri
 
-Defaults to L<https://api.github.com>.  For GitHub Enterprise, you'll likely
-need an URL like L<https://github.yourdomain.com/api/v3/>.
+Defaults to L<https://api.github.com>.
 
 Examples:
 
@@ -156,8 +144,6 @@ B<clear_jsonp_callback>: reset the jsonp_callback attribute
 
 =item *
 
-=for Pod::Coverage has_jsonp_callback
-
 B<has_jsonp_callback>: check if the jsonp_callback attribute is set
 
 =back
@@ -173,22 +159,17 @@ has 'jsonp_callback' => (
 
 =attr per_page
 
-Controls how many items are fetched per API call, aka "page".  See
-also: L<http://developer.github.com/v3/#pagination> and
-L</auto_pagination>.
-
-To minimize the number of API calls to get a complete listing, this
-defaults to the maximum allowed by Github, which is currently 100.
-This may change in the future if Github changes their maximum.
+By default undef, so it defaults to Github's default. See also:
+L<http://developer.github.com/v3/#pagination>.
 
 Examples:
 
-    my $users = Pithub::Users->new( per_page => 30 );
+    my $users = Pithub::Users->new( per_page => 100 );
 
     # ... is the same as ...
 
     my $users = Pithub::Users->new;
-    $users->per_page(30);
+    $users->per_page(100);
 
 There are two helper methods:
 
@@ -200,8 +181,6 @@ B<clear_per_page>: reset the per_page attribute
 
 =item *
 
-=for Pod::Coverage has_per_page
-
 B<has_per_page>: check if the per_page attribute is set
 
 =back
@@ -212,11 +191,8 @@ has 'per_page' => (
     clearer   => 'clear_per_page',
     is        => 'rw',
     predicate => 'has_per_page',
-    default   => 100,
     required  => 0,
 );
-
-=for Pod::Coverage has_prepare_request
 
 =attr prepare_request
 
@@ -305,8 +281,6 @@ B<clear_repo>: reset the repo attribute
 
 =item *
 
-=for Pod::Coverage has_repo
-
 B<has_repo>: check if the repo attribute is set
 
 =back
@@ -370,8 +344,6 @@ B<clear_user>: reset the user attribute
 
 =item *
 
-=for Pod::Coverage has_user
-
 B<has_user>: check if the user attribute is set
 
 =back
@@ -390,22 +362,6 @@ has 'user' => (
     is        => 'rw',
     predicate => 'has_user',
     required  => 0,
-);
-
-=attr utf8
-
-This can set utf8 flag.
-
-Examples:
-
-    my $p = Pithub->new(utf8 => 0); # disable utf8 en/decoding
-    my $p = Pithub->new(utf8 => 1); # enable utf8 en/decoding (default)
-
-=cut
-
-has 'utf8' => (
-    is      => 'ro',
-    default => 1,
 );
 
 has '_json' => (
@@ -429,49 +385,73 @@ my @TOKEN_REQUIRED = (
 );
 
 my @TOKEN_REQUIRED_REGEXP = (
-    qr{^DELETE },
+    qr{^DELETE /gists/.*?$},
+    qr{^DELETE /gists/comments/.*?$},
+    qr{^DELETE /gists/[^/]+/star$},
+    qr{^DELETE /orgs/[^/]+/members/.*?$},
+    qr{^DELETE /orgs/[^/]+/public_members/.*?},
+    qr{^DELETE /repos/[^/]+/[^/]+/collaborators/.*?$},
+    qr{^DELETE /repos/[^/]+/[^/]+/comments/.*?$},
+    qr{^DELETE /repos/[^/]+/[^/]+/downloads/.*?$},
+    qr{^DELETE /repos/[^/]+/[^/]+/hooks/.*?$},
+    qr{^DELETE /repos/[^/]+/[^/]+/issues/comments/.*?$},
+    qr{^DELETE /repos/[^/]+/[^/]+/issues/[^/]+/labels$},
+    qr{^DELETE /repos/[^/]+/[^/]+/issues/[^/]+/labels/.*?$},
+    qr{^DELETE /repos/[^/]+/[^/]+/keys/.*?$},
+    qr{^DELETE /repos/[^/]+/[^/]+/labels/.*?$},
+    qr{^DELETE /repos/[^/]+/[^/]+/milestones/.*?$},
+    qr{^DELETE /repos/[^/]+/[^/]+/pulls/comments/.*?$},
+    qr{^DELETE /repos/[^/]+/[^/]+/releases/.*?$},
+    qr{^DELETE /repos/[^/]+/[^/]+/releases/assets/.*?$},
+    qr{^DELETE /teams/.*?$},
+    qr{^DELETE /teams/[^/]+/members/.*?$},
+    qr{^DELETE /teams/[^/]+/repos/.*?$},
+    qr{^DELETE /user/following/.*?$},
+    qr{^DELETE /user/keys/.*?$},
+    qr{^DELETE /user/starred/[^/]+/.*?$},
+    qr{^DELETE /user/watched/[^/]+/.*?$},
     qr{^GET /gists/starred$},
     qr{^GET /gists/[^/]+/star$},
     qr{^GET /issues$},
-    qr{^GET /orgs/[^/]+/members/.*$},
+    qr{^GET /orgs/[^/]+/members/.*?$},
     qr{^GET /orgs/[^/]+/teams$},
     qr{^GET /repos/[^/]+/[^/]+/collaborators$},
-    qr{^GET /repos/[^/]+/[^/]+/collaborators/.*$},
+    qr{^GET /repos/[^/]+/[^/]+/collaborators/.*?$},
     qr{^GET /repos/[^/]+/[^/]+/hooks$},
-    qr{^GET /repos/[^/]+/[^/]+/hooks/.*$},
+    qr{^GET /repos/[^/]+/[^/]+/hooks/.*?$},
     qr{^GET /repos/[^/]+/[^/]+/keys$},
-    qr{^GET /repos/[^/]+/[^/]+/keys/.*$},
-    qr{^GET /teams/.*$},
+    qr{^GET /repos/[^/]+/[^/]+/keys/.*?$},
+    qr{^GET /teams/.*?$},
     qr{^GET /teams/[^/]+/members$},
-    qr{^GET /teams/[^/]+/members/.*$},
+    qr{^GET /teams/[^/]+/members/.*?$},
     qr{^GET /teams/[^/]+/repos$},
-    qr{^GET /teams/[^/]+/repos/.*$},
-    qr{^GET /user/following/.*$},
-    qr{^GET /user/keys/.*$},
+    qr{^GET /teams/[^/]+/repos/.*?$},
+    qr{^GET /user/following/.*?$},
+    qr{^GET /user/keys/.*?$},
     qr{^GET /user/orgs$},
-    qr{^GET /user/starred/[^/]+/.*$},
+    qr{^GET /user/starred/[^/]+/.*?$},
     qr{^GET /user/watched$},
-    qr{^GET /user/watched/[^/]+/.*$},
-    qr{^GET /users/[^/]+/events/orgs/.*$},
-    qr{^PATCH /gists/.*$},
-    qr{^PATCH /gists/[^/]+/comments/.*$},
-    qr{^PATCH /orgs/.*$},
-    qr{^PATCH /repos/[^/]+/.*$},
-    qr{^PATCH /repos/[^/]+/[^/]+/comments/.*$},
-    qr{^PATCH /repos/[^/]+/[^/]+/git/refs/.*$},
-    qr{^PATCH /repos/[^/]+/[^/]+/hooks/.*$},
-    qr{^PATCH /repos/[^/]+/[^/]+/issues/.*$},
-    qr{^PATCH /repos/[^/]+/[^/]+/issues/comments/.*$},
-    qr{^PATCH /repos/[^/]+/[^/]+/keys/.*$},
-    qr{^PATCH /repos/[^/]+/[^/]+/labels/.*$},
-    qr{^PATCH /repos/[^/]+/[^/]+/milestones/.*$},
-    qr{^PATCH /repos/[^/]+/[^/]+/pulls/.*$},
-    qr{^PATCH /repos/[^/]+/[^/]+/releases/.*$},
-    qr{^PATCH /repos/[^/]+/[^/]+/pulls/comments/.*$},
-    qr{^PATCH /teams/.*$},
-    qr{^PATCH /user/keys/.*$},
-    qr{^PATCH /user/repos/.*$},
-    qr{^POST /repos/[^/]+/[^/]+/releases/[^/]+/assets.*$},
+    qr{^GET /user/watched/[^/]+/.*?$},
+    qr{^GET /users/[^/]+/events/orgs/.*?$},
+    qr{^PATCH /gists/.*?$},
+    qr{^PATCH /gists/comments/.*?$},
+    qr{^PATCH /orgs/.*?$},
+    qr{^PATCH /repos/[^/]+/.*?$},
+    qr{^PATCH /repos/[^/]+/[^/]+/comments/.*?$},
+    qr{^PATCH /repos/[^/]+/[^/]+/git/refs/.*?$},
+    qr{^PATCH /repos/[^/]+/[^/]+/hooks/.*?$},
+    qr{^PATCH /repos/[^/]+/[^/]+/issues/.*?$},
+    qr{^PATCH /repos/[^/]+/[^/]+/issues/comments/.*?$},
+    qr{^PATCH /repos/[^/]+/[^/]+/keys/.*?$},
+    qr{^PATCH /repos/[^/]+/[^/]+/labels/.*?$},
+    qr{^PATCH /repos/[^/]+/[^/]+/milestones/.*?$},
+    qr{^PATCH /repos/[^/]+/[^/]+/pulls/.*?$},
+    qr{^PATCH /repos/[^/]+/[^/]+/releases/.*?$},
+    qr{^PATCH /repos/[^/]+/[^/]+/pulls/comments/.*?$},
+    qr{^PATCH /teams/.*?$},
+    qr{^PATCH /user/keys/.*?$},
+    qr{^PATCH /user/repos/.*?$},
+    qr{^POST /repos/[^/]+/[^/]+/releases/[^/]+/assets.*?$},
     qr{^POST /gists/[^/]+/comments$},
     qr{^POST /orgs/[^/]+/repos$},
     qr{^POST /orgs/[^/]+/teams$},
@@ -495,16 +475,15 @@ my @TOKEN_REQUIRED_REGEXP = (
     qr{^POST /repos/[^/]+/[^/]+/releases$},
     qr{^POST /repos/[^/]+/[^/]+/pulls/[^/]+/comments$},
     qr{^PUT /gists/[^/]+/star$},
-    qr{^PUT /orgs/[^/]+/public_members/.*$},
-    qr{^PUT /repos/[^/]+/[^/]+/collaborators/.*$},
+    qr{^PUT /orgs/[^/]+/public_members/.*?$},
+    qr{^PUT /repos/[^/]+/[^/]+/collaborators/.*?$},
     qr{^PUT /repos/[^/]+/[^/]+/issues/[^/]+/labels$},
     qr{^PUT /repos/[^/]+/[^/]+/pulls/[^/]+/merge$},
-    qr{^PUT /teams/[^/]+/members/.*$},
-    qr{^PUT /teams/[^/]+/memberships/.*$},
-    qr{^PUT /teams/[^/]+/repos/.*$},
-    qr{^PUT /user/following/.*$},
-    qr{^PUT /user/starred/[^/]+/.*$},
-    qr{^PUT /user/watched/[^/]+/.*$},
+    qr{^PUT /teams/[^/]+/members/.*?$},
+    qr{^PUT /teams/[^/]+/repos/.*?$},
+    qr{^PUT /user/following/.*?$},
+    qr{^PUT /user/starred/[^/]+/.*?$},
+    qr{^PUT /user/watched/[^/]+/.*?$},
 );
 
 =method request
@@ -694,41 +673,14 @@ sub request {
         my %query = ( $request->uri->query_form, %$params );
         $request->uri->query_form(%query);
     }
-
-    my $response = $self->_make_request($request);
+    my $response = $self->ua->request($request);
 
     return Pithub::Result->new(
         auto_pagination => $self->auto_pagination,
         response        => $response,
-        utf8            => $self->utf8,
         _request        => sub { $self->request(@_) },
     );
 }
-
-
-sub _make_request {
-    my($self, $request) = @_;
-
-    if( my $cached_response = $self->shared_cache->get($request->uri) ) {
-        # Add the If-None-Match header from the cache's ETag
-        # and make the request
-        $request->header( "If-None-Match" => $cached_response->header("ETag") );
-        my $response = $self->ua->request($request);
-
-        # Got 304 Not Modified, cache is still valid
-        return $cached_response if ($response->code || 0) == 304;
-
-        # The response changed, cache it and return it.
-        $self->shared_cache->set( $request->uri, $response );
-        return $response;
-    }
-    else {
-        my $response = $self->ua->request($request);
-        $self->shared_cache->set( $request->uri, $response );
-        return $response;
-    }
-}
-
 
 =method has_token (?$request)
 
@@ -742,26 +694,16 @@ sub has_token {
 
     # If we have one specified in the object, return true
     return 1 if $self->_has_token;
-    # If no request object here, we don't have a token
+    # If no reqest object here, we don't have a token
     return 0  unless $request;
 
     return 1 if $request->header('Authorization');
     return 0;
 }
 
-=method rate_limit
-
-Query the rate limit for the current object and authentication method.
-
-=cut
-
-sub rate_limit {
-    return shift->request( method => 'GET', path => '/rate_limit' );
-}
-
 sub _build__json {
     my ($self) = @_;
-    return JSON->new->utf8($self->utf8);
+    return JSON->new;
 }
 
 sub _build_ua {
@@ -777,24 +719,30 @@ sub _get_user_repo_args {
 }
 
 sub _create_instance {
-    my ( $self, $class, @args ) = @_;
-
+    my ( $self, $class ) = @_;
     my %args = (
         api_uri         => $self->api_uri,
         auto_pagination => $self->auto_pagination,
         ua              => $self->ua,
-        utf8            => $self->utf8,
-        @args
     );
-
-    for my $attr (qw(repo token user per_page jsonp_callback prepare_request)) {
-        # Allow overrides to set attributes to undef
-        next if exists $args{$attr};
-
-        my $has_attr = "has_$attr";
-        $args{$attr} = $self->$attr if $self->$has_attr;
+    if ( $self->has_repo ) {
+        $args{repo} = $self->repo;
     }
-
+    if ( $self->has_token ) {
+        $args{token} = $self->token;
+    }
+    if ( $self->has_user ) {
+        $args{user} = $self->user;
+    }
+    if ( $self->has_per_page ) {
+        $args{per_page} = $self->per_page;
+    }
+    if ( $self->has_jsonp_callback ) {
+        $args{jsonp_callback} = $self->jsonp_callback;
+    }
+    if ( $self->has_prepare_request ) {
+        $args{prepare_request} = $self->prepare_request;
+    }
     return $class->new(%args);
 }
 
@@ -823,18 +771,12 @@ sub _request_for {
     return $request;
 }
 
-my %TOKEN_REQUIRED = map { ($_ => 1) } @TOKEN_REQUIRED;
 sub _token_required {
     my ( $self, $method, $path ) = @_;
-
-    my $key = "${method} ${path}";
-
-    return 1 if $TOKEN_REQUIRED{$key};
-
+    return 1 if grep $_ eq "${method} ${path}", @TOKEN_REQUIRED;
     foreach my $regexp (@TOKEN_REQUIRED_REGEXP) {
-        return 1 if $key =~ /$regexp/;
+        return 1 if "${method} ${path}" =~ /$regexp/;
     }
-
     return 0;
 }
 

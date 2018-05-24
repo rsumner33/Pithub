@@ -1,8 +1,8 @@
 use FindBin;
 use lib "$FindBin::Bin/lib";
-use JSON::MaybeXS;
-use Pithub::Test::Factory;
+use JSON;
 use Pithub::Test;
+use Test::Most;
 
 BEGIN {
     use_ok('Pithub::GitData::Blobs');
@@ -15,7 +15,7 @@ BEGIN {
 # Pithub::GitData::Blobs->create
 {
     my $json = JSON->new;
-    my $obj = Pithub::Test::Factory->create( 'Pithub::GitData::Blobs', user => 'foo', repo => 'bar' );
+    my $obj = Pithub::Test->create( 'Pithub::GitData::Blobs', user => 'foo', repo => 'bar' );
 
     isa_ok $obj, 'Pithub::GitData::Blobs';
 
@@ -41,7 +41,7 @@ BEGIN {
 
 # Pithub::GitData::Blobs->get
 {
-    my $obj = Pithub::Test::Factory->create( 'Pithub::GitData::Blobs', user => 'foo', repo => 'bar' );
+    my $obj = Pithub::Test->create( 'Pithub::GitData::Blobs', user => 'foo', repo => 'bar' );
 
     isa_ok $obj, 'Pithub::GitData::Blobs';
 
@@ -58,7 +58,7 @@ BEGIN {
 
 # Pithub::GitData::Commits->create
 {
-    my $obj = Pithub::Test::Factory->create( 'Pithub::GitData::Commits', user => 'foo', repo => 'bar' );
+    my $obj = Pithub::Test->create( 'Pithub::GitData::Commits', user => 'foo', repo => 'bar' );
 
     isa_ok $obj, 'Pithub::GitData::Commits';
 
@@ -80,7 +80,7 @@ BEGIN {
 
 # Pithub::GitData::Commits->get
 {
-    my $obj = Pithub::Test::Factory->create( 'Pithub::GitData::Commits', user => 'foo', repo => 'bar' );
+    my $obj = Pithub::Test->create( 'Pithub::GitData::Commits', user => 'foo', repo => 'bar' );
 
     isa_ok $obj, 'Pithub::GitData::Commits';
 
@@ -97,7 +97,7 @@ BEGIN {
 
 # Pithub::GitData::References->get
 {
-    my $obj = Pithub::Test::Factory->create( 'Pithub::GitData::References', user => 'foo', repo => 'bar' );
+    my $obj = Pithub::Test->create( 'Pithub::GitData::References', user => 'foo', repo => 'bar' );
 
     isa_ok $obj, 'Pithub::GitData::References';
 
@@ -114,7 +114,7 @@ BEGIN {
 
 # Pithub::GitData::References->create
 {
-    my $obj = Pithub::Test::Factory->create( 'Pithub::GitData::References', user => 'foo', repo => 'bar' );
+    my $obj = Pithub::Test->create( 'Pithub::GitData::References', user => 'foo', repo => 'bar' );
 
     isa_ok $obj, 'Pithub::GitData::References';
 
@@ -136,7 +136,7 @@ BEGIN {
 
 # Pithub::GitData::References->list
 {
-    my $obj = Pithub::Test::Factory->create( 'Pithub::GitData::References', user => 'foo', repo => 'bar' );
+    my $obj = Pithub::Test->create( 'Pithub::GitData::References', user => 'foo', repo => 'bar' );
 
     isa_ok $obj, 'Pithub::GitData::References';
 
@@ -159,7 +159,7 @@ BEGIN {
 
 # Pithub::GitData::References->update
 {
-    my $obj = Pithub::Test::Factory->create( 'Pithub::GitData::References', user => 'foo', repo => 'bar' );
+    my $obj = Pithub::Test->create( 'Pithub::GitData::References', user => 'foo', repo => 'bar' );
 
     isa_ok $obj, 'Pithub::GitData::References';
 
@@ -182,7 +182,7 @@ BEGIN {
 
 # Pithub::GitData::Tags->get
 {
-    my $obj = Pithub::Test::Factory->create( 'Pithub::GitData::Tags', user => 'foo', repo => 'bar' );
+    my $obj = Pithub::Test->create( 'Pithub::GitData::Tags', user => 'foo', repo => 'bar' );
 
     isa_ok $obj, 'Pithub::GitData::Tags';
 
@@ -199,7 +199,7 @@ BEGIN {
 
 # Pithub::GitData::Tags->create
 {
-    my $obj = Pithub::Test::Factory->create( 'Pithub::GitData::Tags', user => 'foo', repo => 'bar' );
+    my $obj = Pithub::Test->create( 'Pithub::GitData::Tags', user => 'foo', repo => 'bar' );
 
     isa_ok $obj, 'Pithub::GitData::Tags';
 
@@ -229,7 +229,7 @@ BEGIN {
 
 # Pithub::GitData::Trees->get
 {
-    my $obj = Pithub::Test::Factory->create( 'Pithub::GitData::Trees', user => 'foo', repo => 'bar' );
+    my $obj = Pithub::Test->create( 'Pithub::GitData::Trees', user => 'foo', repo => 'bar' );
 
     isa_ok $obj, 'Pithub::GitData::Trees';
 
@@ -246,7 +246,8 @@ BEGIN {
     {
         my $result = $obj->get( sha => 456, recursive => 1 );
         is $result->request->method, 'GET', 'HTTP method';
-        uri_is $result->request->uri, 'https://api.github.com/repos/foo/bar/git/trees/456?recursive=1&per_page=100';
+        is $result->request->uri->path, '/repos/foo/bar/git/trees/456', 'HTTP path';
+        is $result->request->uri->query, 'recursive=1', 'HTTP GET parameters';
         my $http_request = $result->request;
         is $http_request->content, '', 'HTTP body';
     }
@@ -254,7 +255,7 @@ BEGIN {
 
 # Pithub::GitData::Trees->create
 {
-    my $obj = Pithub::Test::Factory->create( 'Pithub::GitData::Trees', user => 'foo', repo => 'bar' );
+    my $obj = Pithub::Test->create( 'Pithub::GitData::Trees', user => 'foo', repo => 'bar' );
 
     isa_ok $obj, 'Pithub::GitData::Trees';
 

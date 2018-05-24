@@ -1,6 +1,6 @@
 use FindBin;
 use lib "$FindBin::Bin/../lib";
-use Pithub::Test::Factory;
+use Pithub::Test;
 use Test::Most;
 
 BEGIN {
@@ -29,10 +29,10 @@ SKIP: {
 SKIP: {
     skip 'PITHUB_TEST_TOKEN required to run this test - DO NOT DO THIS UNLESS YOU KNOW WHAT YOU ARE DOING', 1 unless $ENV{PITHUB_TEST_TOKEN};
 
-    my $org      = Pithub::Test::Factory->test_account->{org};
-    my $org_repo = Pithub::Test::Factory->test_account->{org_repo};
-    my $repo     = Pithub::Test::Factory->test_account->{repo};
-    my $user     = Pithub::Test::Factory->test_account->{user};
+    my $org      = Pithub::Test->test_account->{org};
+    my $org_repo = Pithub::Test->test_account->{org_repo};
+    my $repo     = Pithub::Test->test_account->{repo};
+    my $user     = Pithub::Test->test_account->{user};
     my $p        = Pithub->new(
         user  => $user,
         repo  => $repo,
@@ -45,7 +45,7 @@ SKIP: {
         my $key_id = $p->users->keys->create(
             data => {
                 title => 'someone@somewhere',
-                key   => "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCuK40Ng6C0NfMrrVuE+6mkUyj90JcvPdwrqFi/tv4g5Ncny5FCkEMATmYA0NtByAS+2p+jwClbVI9dav077+DxHJbwDwcecXXqjUA4gnZM+03kksPbTjfuYql9nC8PdhgZ3kiftop7AVZZnhSKF5stLwa0hkCZkXVeaajQzaG1pCnJJNOcnaRPcuEkTToTnkw8y3Q3fpuMmRjz3NCayh/gJgcj/EtrextqnNpDT4j4r3IeCGvCMEtmUvepKG6sTdnh1EDX5U163is9Qnwfdo3D7CVUh2rhJ8pM6RnAbqbzWqQ+gbhWoXQ7T1Qdq1GXKN7lMMbjz9M7cPK3Vs0p5yl1",
+                key   => "ssh-rsa C0FF33$$",
             }
         )->content->{id};
 
@@ -54,6 +54,15 @@ SKIP: {
 
         # Pithub::Users::Keys->list
         is $p->users->keys->list->first->{title}, 'someone@somewhere', 'Pithub::Users::Keys->list title attribute';
+
+        # Pithub::Users::Keys->update
+        ok $p->users->keys->update(
+            key_id => $key_id,
+            data   => { title => 'someone@somewhereelse' }
+        )->success, 'Pithub::Users::Keys->update successful';
+
+        # Pithub::Users::Keys->get
+        is $p->users->keys->get( key_id => $key_id )->content->{title}, 'someone@somewhereelse', 'Pithub::Users::Keys->get title attribute after update';
 
         # Pithub::Users::Keys->delete
         ok $p->users->keys->delete( key_id => $key_id )->success, 'Pithub::Users::Keys->delete successful';
@@ -68,7 +77,7 @@ SKIP: {
         ok $p->users->emails->add( data => ['johannes@plunien.name'] )->success, 'Pithub::Users::Emails->add successful';
 
         # Pithub::Users::Emails->list
-        is $p->users->emails->list->content->[0]->{email}, 'johannes@plunien.name', 'Pithub::Users::Emails->list recently added email address';
+        is $p->users->emails->list->content->[-1], 'johannes@plunien.name', 'Pithub::Users::Emails->list recently added email address';
 
         # Pithub::Users::Emails->delete
         ok $p->users->emails->delete( data => ['johannes@plunien.name'] )->success, 'Pithub::Users::Emails->delete successful';

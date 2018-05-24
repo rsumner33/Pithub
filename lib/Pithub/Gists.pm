@@ -1,5 +1,5 @@
 package Pithub::Gists;
-our $VERSION = '0.01035';
+
 # ABSTRACT: Github v3 Gists API
 
 use Moo;
@@ -14,7 +14,7 @@ Provides access to L<Pithub::Gists::Comments>.
 =cut
 
 sub comments {
-    return shift->_create_instance('Pithub::Gists::Comments', @_);
+    return shift->_create_instance('Pithub::Gists::Comments');
 }
 
 =method create

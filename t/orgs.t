@@ -1,7 +1,7 @@
 use FindBin;
 use lib "$FindBin::Bin/lib";
-use JSON::MaybeXS;
-use Pithub::Test::Factory;
+use JSON;
+use Pithub::Test;
 use Test::Most;
 use MIME::Base64 qw();
 
@@ -13,7 +13,7 @@ BEGIN {
 
 # Pithub::Orgs->get
 {
-    my $obj = Pithub::Test::Factory->create( 'Pithub::Orgs', user => 'foo', repo => 'bar' );
+    my $obj = Pithub::Test->create( 'Pithub::Orgs', user => 'foo', repo => 'bar' );
 
     isa_ok $obj, 'Pithub::Orgs';
 
@@ -30,7 +30,7 @@ BEGIN {
 
 # Pithub::Orgs->list
 {
-    my $obj = Pithub::Test::Factory->create( 'Pithub::Orgs', user => 'foo', repo => 'bar' );
+    my $obj = Pithub::Test->create( 'Pithub::Orgs', user => 'foo', repo => 'bar' );
 
     isa_ok $obj, 'Pithub::Orgs';
 
@@ -77,7 +77,7 @@ BEGIN {
 
 # Pithub::Orgs->update
 {
-    my $obj = Pithub::Test::Factory->create( 'Pithub::Orgs', user => 'foo', repo => 'bar' );
+    my $obj = Pithub::Test->create( 'Pithub::Orgs', user => 'foo', repo => 'bar' );
 
     isa_ok $obj, 'Pithub::Orgs';
 
@@ -119,7 +119,7 @@ BEGIN {
 
 # Pithub::Orgs::Members->conceal
 {
-    my $obj = Pithub::Test::Factory->create('Pithub::Orgs::Members');
+    my $obj = Pithub::Test->create('Pithub::Orgs::Members');
 
     isa_ok $obj, 'Pithub::Orgs::Members';
 
@@ -140,7 +140,7 @@ BEGIN {
 
 # Pithub::Orgs::Members->delete
 {
-    my $obj = Pithub::Test::Factory->create('Pithub::Orgs::Members');
+    my $obj = Pithub::Test->create('Pithub::Orgs::Members');
 
     isa_ok $obj, 'Pithub::Orgs::Members';
 
@@ -161,7 +161,7 @@ BEGIN {
 
 # Pithub::Orgs::Members->is_member
 {
-    my $obj = Pithub::Test::Factory->create('Pithub::Orgs::Members');
+    my $obj = Pithub::Test->create('Pithub::Orgs::Members');
 
     isa_ok $obj, 'Pithub::Orgs::Members';
 
@@ -182,7 +182,7 @@ BEGIN {
 
 # Pithub::Orgs::Members->is_public
 {
-    my $obj = Pithub::Test::Factory->create('Pithub::Orgs::Members');
+    my $obj = Pithub::Test->create('Pithub::Orgs::Members');
 
     isa_ok $obj, 'Pithub::Orgs::Members';
 
@@ -202,7 +202,7 @@ BEGIN {
 
 # Pithub::Orgs::Members->list
 {
-    my $obj = Pithub::Test::Factory->create( 'Pithub::Orgs::Members', user => 'foo', repo => 'bar' );
+    my $obj = Pithub::Test->create( 'Pithub::Orgs::Members', user => 'foo', repo => 'bar' );
 
     isa_ok $obj, 'Pithub::Orgs::Members';
 
@@ -219,7 +219,7 @@ BEGIN {
 
 # Pithub::Orgs::Members->list_public
 {
-    my $obj = Pithub::Test::Factory->create( 'Pithub::Orgs::Members', user => 'foo', repo => 'bar' );
+    my $obj = Pithub::Test->create( 'Pithub::Orgs::Members', user => 'foo', repo => 'bar' );
 
     isa_ok $obj, 'Pithub::Orgs::Members';
 
@@ -236,7 +236,7 @@ BEGIN {
 
 # Pithub::Orgs::Members->publicize
 {
-    my $obj = Pithub::Test::Factory->create('Pithub::Orgs::Members');
+    my $obj = Pithub::Test->create('Pithub::Orgs::Members');
 
     isa_ok $obj, 'Pithub::Orgs::Members';
 
@@ -257,7 +257,7 @@ BEGIN {
 
 # Pithub::Orgs::Teams->add_member
 {
-    my $obj = Pithub::Test::Factory->create('Pithub::Orgs::Teams');
+    my $obj = Pithub::Test->create('Pithub::Orgs::Teams');
 
     isa_ok $obj, 'Pithub::Orgs::Teams';
 
@@ -276,31 +276,9 @@ BEGIN {
     }
 }
 
-# Pithub::Orgs::Teams->add_membership
-{
-    my $obj = Pithub::Test::Factory->create('Pithub::Orgs::Teams');
-
-    isa_ok $obj, 'Pithub::Orgs::Teams';
-
-    throws_ok { $obj->add_membership } qr{Missing key in parameters: team_id}, 'No parameters';
-    throws_ok { $obj->add_membership( team_id => 123 ) } qr{Missing key in parameters: user}, 'No user parameter';
-    throws_ok { $obj->add_membership( team_id => 123, user => 'bar' ) } qr{Missing key in parameters: data}, 'No user parameter';
-    throws_ok { $obj->add_membership( team_id => 123, user => 'bar', data => { role => 'member' } ); } qr{Access token required for: PUT /teams/123/memberships/bar\s+}, 'Token required';
-
-    ok $obj->token(123), 'Token set';
-
-    {
-        my $result = $obj->add_membership( team_id => 123, user => 'bar', data => { role => 'member' } );
-        is $result->request->method, 'PUT', 'HTTP method';
-        is $result->request->uri->path, '/teams/123/memberships/bar', 'HTTP path';
-        my $http_request = $result->request;
-        is $http_request->content, '{"role":"member"}', 'HTTP body';
-    }
-}
-
 # Pithub::Orgs::Teams->add_repo
 {
-    my $obj = Pithub::Test::Factory->create('Pithub::Orgs::Teams');
+    my $obj = Pithub::Test->create('Pithub::Orgs::Teams');
 
     isa_ok $obj, 'Pithub::Orgs::Teams';
 
@@ -322,7 +300,7 @@ BEGIN {
 
 # Pithub::Orgs::Teams->create
 {
-    my $obj = Pithub::Test::Factory->create('Pithub::Orgs::Teams');
+    my $obj = Pithub::Test->create('Pithub::Orgs::Teams');
 
     isa_ok $obj, 'Pithub::Orgs::Teams';
 
@@ -352,7 +330,7 @@ BEGIN {
 
 # Pithub::Orgs::Teams->delete
 {
-    my $obj = Pithub::Test::Factory->create('Pithub::Orgs::Teams');
+    my $obj = Pithub::Test->create('Pithub::Orgs::Teams');
 
     isa_ok $obj, 'Pithub::Orgs::Teams';
 
@@ -372,7 +350,7 @@ BEGIN {
 
 # Pithub::Orgs::Teams->get
 {
-    my $obj = Pithub::Test::Factory->create('Pithub::Orgs::Teams');
+    my $obj = Pithub::Test->create('Pithub::Orgs::Teams');
 
     isa_ok $obj, 'Pithub::Orgs::Teams';
 
@@ -392,7 +370,7 @@ BEGIN {
 
 # Pithub::Orgs::Teams->has_repo
 {
-    my $obj = Pithub::Test::Factory->create('Pithub::Orgs::Teams');
+    my $obj = Pithub::Test->create('Pithub::Orgs::Teams');
 
     isa_ok $obj, 'Pithub::Orgs::Teams';
 
@@ -413,7 +391,7 @@ BEGIN {
 
 # Pithub::Orgs::Teams->is_member
 {
-    my $obj = Pithub::Test::Factory->create('Pithub::Orgs::Teams');
+    my $obj = Pithub::Test->create('Pithub::Orgs::Teams');
 
     isa_ok $obj, 'Pithub::Orgs::Teams';
 
@@ -434,7 +412,7 @@ BEGIN {
 
 # Pithub::Orgs::Teams->list
 {
-    my $obj = Pithub::Test::Factory->create('Pithub::Orgs::Teams');
+    my $obj = Pithub::Test->create('Pithub::Orgs::Teams');
 
     isa_ok $obj, 'Pithub::Orgs::Teams';
 
@@ -454,7 +432,7 @@ BEGIN {
 
 # Pithub::Orgs::Teams->list_members
 {
-    my $obj = Pithub::Test::Factory->create('Pithub::Orgs::Teams');
+    my $obj = Pithub::Test->create('Pithub::Orgs::Teams');
 
     isa_ok $obj, 'Pithub::Orgs::Teams';
 
@@ -474,7 +452,7 @@ BEGIN {
 
 # Pithub::Orgs::Teams->list_repos
 {
-    my $obj = Pithub::Test::Factory->create('Pithub::Orgs::Teams');
+    my $obj = Pithub::Test->create('Pithub::Orgs::Teams');
 
     isa_ok $obj, 'Pithub::Orgs::Teams';
 
@@ -494,7 +472,7 @@ BEGIN {
 
 # Pithub::Orgs::Teams->remove_member
 {
-    my $obj = Pithub::Test::Factory->create('Pithub::Orgs::Teams');
+    my $obj = Pithub::Test->create('Pithub::Orgs::Teams');
 
     isa_ok $obj, 'Pithub::Orgs::Teams';
 
@@ -513,30 +491,9 @@ BEGIN {
     }
 }
 
-# Pithub::Orgs::Teams->remove_membership
-{
-    my $obj = Pithub::Test::Factory->create('Pithub::Orgs::Teams');
-
-    isa_ok $obj, 'Pithub::Orgs::Teams';
-
-    throws_ok { $obj->remove_membership } qr{Missing key in parameters: team_id}, 'No parameters';
-    throws_ok { $obj->remove_membership( team_id => 123 ) } qr{Missing key in parameters: user}, 'No user parameter';
-    throws_ok { $obj->remove_membership( team_id => 123, user => 'bar' ); } qr{Access token required for: DELETE /teams/123/memberships/bar\s+}, 'Token required';
-
-    ok $obj->token(123), 'Token set';
-
-    {
-        my $result = $obj->remove_membership( team_id => 123, user => 'bar' );
-        is $result->request->method, 'DELETE', 'HTTP method';
-        is $result->request->uri->path, '/teams/123/memberships/bar', 'HTTP path';
-        my $http_request = $result->request;
-        is $http_request->content, '', 'HTTP body';
-    }
-}
-
 # Pithub::Orgs::Teams->remove_repo
 {
-    my $obj = Pithub::Test::Factory->create('Pithub::Orgs::Teams');
+    my $obj = Pithub::Test->create('Pithub::Orgs::Teams');
 
     isa_ok $obj, 'Pithub::Orgs::Teams';
 
@@ -557,7 +514,7 @@ BEGIN {
 
 # Pithub::Orgs::Teams->update
 {
-    my $obj = Pithub::Test::Factory->create('Pithub::Orgs::Teams');
+    my $obj = Pithub::Test->create('Pithub::Orgs::Teams');
 
     isa_ok $obj, 'Pithub::Orgs::Teams';
 

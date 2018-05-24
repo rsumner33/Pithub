@@ -1,6 +1,6 @@
 package Pithub::Search;
-our $VERSION = '0.01035';
-# ABSTRACT: Github legacy Search API
+
+# ABSTRACT: Github v3 Search API
 
 use Moo;
 use Carp qw(croak);

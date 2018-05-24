@@ -1,6 +1,6 @@
 use FindBin;
 use lib "$FindBin::Bin/../lib";
-use Pithub::Test::Factory;
+use Pithub::Test;
 use Test::Most;
 
 BEGIN {
@@ -27,7 +27,7 @@ SKIP: {
         is $result->success, 1, 'Pithub::Gists->list successful';
         while ( my $row = $result->next ) {
             ok $row->{id}, "Pithub::Gists->list has id: $row->{id}";
-            like $row->{url}, qr{https://api.github.com/gists/[a-f\d]+$}, "Pithub::Gists->list has url: $row->{url}";
+            like $row->{url}, qr{https://api.github.com/gists/\d+$}, "Pithub::Gists->list has url: $row->{url}";
         }
     }
 
@@ -37,7 +37,7 @@ SKIP: {
         is $result->success, 1, 'Pithub::Gists::Comments->list successful';
         while ( my $row = $result->next ) {
             ok $row->{id}, "Pithub::Gists::Comments->list has id: $row->{id}";
-            like $row->{url}, qr{https://api.github.com/gists/[a-f\d]+/comments/\d+$}, "Pithub::Gists::Comments->list has url: $row->{url}";
+            like $row->{url}, qr{https://api.github.com/gists/\d+/comments/\d+$}, "Pithub::Gists::Comments->list has url: $row->{url}";
         }
     }
 }
@@ -47,10 +47,10 @@ SKIP: {
 SKIP: {
     skip 'PITHUB_TEST_TOKEN required to run this test - DO NOT DO THIS UNLESS YOU KNOW WHAT YOU ARE DOING', 1 unless $ENV{PITHUB_TEST_TOKEN};
 
-    my $org      = Pithub::Test::Factory->test_account->{org};
-    my $org_repo = Pithub::Test::Factory->test_account->{org_repo};
-    my $repo     = Pithub::Test::Factory->test_account->{repo};
-    my $user     = Pithub::Test::Factory->test_account->{user};
+    my $org      = Pithub::Test->test_account->{org};
+    my $org_repo = Pithub::Test->test_account->{org_repo};
+    my $repo     = Pithub::Test->test_account->{repo};
+    my $user     = Pithub::Test->test_account->{user};
     my $p        = Pithub->new(
         user  => $user,
         repo  => $repo,
@@ -100,21 +100,21 @@ SKIP: {
         like $comment_id, qr{^\d+$}, 'Pithub::Gists::Comments->create returned a comment id';
 
         # Pithub::Gists::Comments->get
-        is $p->gists->comments->get( gist_id => $gist_id, comment_id => $comment_id )->content->{body}, 'some gist comment', 'Pithub::Gists::Comments->get body';
+        is $p->gists->comments->get( comment_id => $comment_id )->content->{body}, 'some gist comment', 'Pithub::Gists::Comments->get body';
 
         # Pithub::Gists::Comments->update
-        ok $p->gists->comments->update( gist_id => $gist_id, comment_id => $comment_id, data => { body => 'some UPDATED gist comment' } )->success,
+        ok $p->gists->comments->update( comment_id => $comment_id, data => { body => 'some UPDATED gist comment' } )->success,
           'Pithub::Gists::Comments->update successful';
 
         # Pithub::Gists::Comments->get
-        is $p->gists->comments->get( gist_id => $gist_id, comment_id => $comment_id )->content->{body}, 'some UPDATED gist comment',
+        is $p->gists->comments->get( comment_id => $comment_id )->content->{body}, 'some UPDATED gist comment',
           'Pithub::Gists::Comments->get body after update';
 
         # Pithub::Gists::Comments->delete
-        ok $p->gists->comments->delete( gist_id => $gist_id, comment_id => $comment_id )->success, 'Pithub::Gists::Comments->delete successful';
+        ok $p->gists->comments->delete( comment_id => $comment_id )->success, 'Pithub::Gists::Comments->delete successful';
 
         # Pithub::Gists::Comments->get
-        ok !$p->gists->comments->get( gist_id => $gist_id, comment_id => $comment_id )->success, 'Pithub::Gists::Comments->get not successful after delete';
+        ok !$p->gists->comments->get( comment_id => $comment_id )->success, 'Pithub::Gists::Comments->get not successful after delete';
 
         # Pithub::Gists->delete
         ok $p->gists->delete( gist_id => $gist_id )->success, 'Pithub::Gists->delete successful';

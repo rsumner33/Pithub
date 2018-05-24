@@ -1,5 +1,5 @@
 package Pithub::PullRequests;
-our $VERSION = '0.01035';
+
 # ABSTRACT: Github v3 Pull Requests API
 
 use Moo;
@@ -14,7 +14,7 @@ Provides access to L<Pithub::PullRequests::Comments>.
 =cut
 
 sub comments {
-    return shift->_create_instance('Pithub::PullRequests::Comments', @_);
+    return shift->_create_instance('Pithub::PullRequests::Comments');
 }
 
 =method commits

@@ -1,12 +1,9 @@
 package Pithub::Repos;
-our $VERSION = '0.01035';
+
 # ABSTRACT: Github v3 Repos API
 
 use Moo;
 use Carp qw(croak);
-use Pithub::Issues;
-use Pithub::Markdown;
-use Pithub::PullRequests;
 use Pithub::Repos::Collaborators;
 use Pithub::Repos::Commits;
 use Pithub::Repos::Contents;
@@ -20,39 +17,6 @@ use Pithub::Repos::Stats;
 use Pithub::Repos::Statuses;
 use Pithub::Repos::Watching;
 extends 'Pithub::Base';
-
-=method branch
-
-Get information about a single branch.
-
-    GET /repos/:owner/:repo/branches/:branch
-
-Example:
-
-    my $result = Pithub->new->branch(
-        user => 'plu',
-        repo => 'Pithub',
-        branch => "master"
-    );
-
-See also L<branches> to get a list of all branches.
-
-=cut
-
-sub branch {
-    my ( $self, %args ) = @_;
-    croak 'Missing key in parameters: branch (string)' unless defined $args{branch};
-    $self->_validate_user_repo_args( \%args );
-    return $self->request(
-        method => 'GET',
-        path   => sprintf(
-            '/repos/%s/%s/branches/%s', delete $args{user},
-                                        delete $args{repo},
-                                        delete $args{branch},
-        ),
-        %args,
-    );
-}
 
 =method branches
 
@@ -68,8 +32,6 @@ Examples:
 
     my $repos  = Pithub::Repos->new;
     my $result = $repos->branches( user => 'plu', repo => 'Pithub' );
-
-See also L<branch> to get information about a single branch.
 
 =back
 
@@ -92,7 +54,7 @@ Provides access to L<Pithub::Repos::Collaborators>.
 =cut
 
 sub collaborators {
-    return shift->_create_instance('Pithub::Repos::Collaborators', @_);
+    return shift->_create_instance('Pithub::Repos::Collaborators');
 }
 
 =method commits
@@ -102,7 +64,7 @@ Provides access to L<Pithub::Repos::Commits>.
 =cut
 
 sub commits {
-    return shift->_create_instance('Pithub::Repos::Commits', @_);
+    return shift->_create_instance('Pithub::Repos::Commits');
 }
 
 =method contents
@@ -112,7 +74,7 @@ Provides access to L<Pithub::Repos::Contents>.
 =cut
 
 sub contents {
-    return shift->_create_instance('Pithub::Repos::Contents', @_);
+    return shift->_create_instance('Pithub::Repos::Contents');
 }
 
 =method contributors
@@ -197,24 +159,6 @@ sub create {
     }
 }
 
-=method delete
-
-Delete a repository.
-
-    DELETE /repos/:owner/:repo
-
-=cut
-
-sub delete {
-    my( $self, %args ) = @_;
-    $self->_validate_user_repo_args( \%args );
-    return $self->request(
-        method => 'DELETE',
-        path   => sprintf( '/repos/%s/%s', delete $args{user}, delete $args{repo} ),
-        %args,
-    );
-}
-
 =method downloads
 
 Provides access to L<Pithub::Repos::Downloads>.
@@ -222,7 +166,7 @@ Provides access to L<Pithub::Repos::Downloads>.
 =cut
 
 sub downloads {
-    return shift->_create_instance('Pithub::Repos::Downloads', @_);
+    return shift->_create_instance('Pithub::Repos::Downloads');
 }
 
 =method forks
@@ -232,7 +176,7 @@ Provides access to L<Pithub::Repos::Forks>.
 =cut
 
 sub forks {
-    return shift->_create_instance('Pithub::Repos::Forks', @_);
+    return shift->_create_instance('Pithub::Repos::Forks');
 }
 
 =method get
@@ -271,17 +215,7 @@ Provides access to L<Pithub::Repos::Hooks>.
 =cut
 
 sub hooks {
-    return shift->_create_instance('Pithub::Repos::Hooks', @_);
-}
-
-=method issues
-
-Provides access to L<Pithub::Issues> for this repo.
-
-=cut
-
-sub issues {
-    return shift->_create_instance('Pithub::Issues', @_);
+    return shift->_create_instance('Pithub::Repos::Hooks');
 }
 
 =method keys
@@ -291,7 +225,7 @@ Provides access to L<Pithub::Repos::Keys>.
 =cut
 
 sub keys {
-    return shift->_create_instance('Pithub::Repos::Keys', @_);
+    return shift->_create_instance('Pithub::Repos::Keys');
 }
 
 =method languages
@@ -389,30 +323,6 @@ sub list {
     }
 }
 
-=method markdown
-
-Provides access to L<Pithub::Markdown> setting the current repository as the
-default context. This also sets the mode to default to 'gfm'.
-
-=cut
-
-sub markdown {
-    my $self = shift;
-    return $self->_create_instance('Pithub::Markdown',
-        mode => 'gfm', context => sprintf( '%s/%s', $self->user, $self->repo ),
-        @_);
-}
-
-=method pull_requests
-
-Provides access to L<Pithub::PullRequests>.
-
-=cut
-
-sub pull_requests {
-    return shift->_create_instance('Pithub::PullRequests', @_);
-}
-
 =method releases
 
 Provides access to L<Pithub::Repos::Releases>.
@@ -420,7 +330,7 @@ Provides access to L<Pithub::Repos::Releases>.
 =cut
 
 sub releases {
-    return shift->_create_instance('Pithub::Repos::Releases', @_);
+    return shift->_create_instance('Pithub::Repos::Releases');
 }
 
 =method starring
@@ -430,7 +340,7 @@ Provides access to L<Pithub::Repos::Starring>.
 =cut
 
 sub starring {
-    return shift->_create_instance('Pithub::Repos::Starring', @_);
+    return shift->_create_instance('Pithub::Repos::Starring');
 }
 
 =method stats
@@ -440,7 +350,7 @@ Provide access to L<Pithub::Repos::Stats>.
 =cut
 
 sub stats {
-    return shift->_create_instance('Pithub::Repos::Stats', @_);
+    return shift->_create_instance('Pithub::Repos::Stats');
 }
 
 =method statuses
@@ -450,7 +360,7 @@ Provide access to L<Pithub::Repos::Statuses>.
 =cut
 
 sub statuses {
-    return shift->_create_instance('Pithub::Repos::Statuses', @_);
+    return shift->_create_instance('Pithub::Repos::Statuses');
 }
 
 =method tags
@@ -552,7 +462,7 @@ Provides access to L<Pithub::Repos::Watching>.
 =cut
 
 sub watching {
-    return shift->_create_instance('Pithub::Repos::Watching', @_);
+    return shift->_create_instance('Pithub::Repos::Watching');
 }
 
 1;

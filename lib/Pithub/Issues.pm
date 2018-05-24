@@ -1,5 +1,5 @@
 package Pithub::Issues;
-our $VERSION = '0.01035';
+
 # ABSTRACT: Github v3 Issues API
 
 use Moo;
@@ -18,7 +18,7 @@ Provides access to L<Pithub::Issues::Assignees>.
 =cut
 
 sub assignees {
-    return shift->_create_instance('Pithub::Issues::Assignees', @_);
+    return shift->_create_instance('Pithub::Issues::Assignees');
 }
 
 =method comments
@@ -28,7 +28,7 @@ Provides access to L<Pithub::Issues::Comments>.
 =cut
 
 sub comments {
-    return shift->_create_instance('Pithub::Issues::Comments', @_);
+    return shift->_create_instance('Pithub::Issues::Comments');
 }
 
 =method create
@@ -179,7 +179,7 @@ Provides access to L<Pithub::Issues::Events>.
 =cut
 
 sub events {
-    return shift->_create_instance('Pithub::Issues::Events', @_);
+    return shift->_create_instance('Pithub::Issues::Events');
 }
 
 =method get
@@ -297,7 +297,7 @@ Provides access to L<Pithub::Issues::Labels>.
 =cut
 
 sub labels {
-    return shift->_create_instance('Pithub::Issues::Labels', @_);
+    return shift->_create_instance('Pithub::Issues::Labels');
 }
 
 =method list
@@ -706,7 +706,7 @@ Provides access to L<Pithub::Issues::Milestones>.
 =cut
 
 sub milestones {
-    return shift->_create_instance('Pithub::Issues::Milestones', @_);
+    return shift->_create_instance('Pithub::Issues::Milestones');
 }
 
 =method update

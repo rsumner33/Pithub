@@ -1,5 +1,5 @@
 package Pithub::Repos::Contents;
-our $VERSION = '0.01035';
+
 # ABSTRACT: Github v3 Repo Contents API
 
 use Moo;
@@ -25,8 +25,6 @@ C<< master >>.
 
 Examples:
 
-    use Path::Tiny;
-
     my $c = Pithub::Repos::Contents->new(
         repo => 'Pithub',
         user => 'plu'
@@ -34,12 +32,12 @@ Examples:
 
     my $result = $c->archive( archive_format => 'tarball' );
     if ( $result->success ) {
-        path('Pithub-master.tgz')->spew($result->raw_content);
+        File::Slurp::write_file('Pithub-master.tgz', $result->raw_content);
     }
 
     $result = $c->archive( archive_format => 'tarball', ref => 'other_branch' );
     if ( $result->success ) {
-        path('Pithub-other_branch.tgz')->spew($result->raw_content);
+        File::Slurp::write_file('Pithub-other_branch.tgz', $result->raw_content);
     }
 
 =back
